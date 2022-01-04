@@ -1,0 +1,30 @@
+on:
+  push:
+    tags:        
+      - '*'
+name: Deliver to Doker Hub
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Get the version
+      id: get_version
+      run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}
+    - name: Checkout code
+      uses: actions/checkout@v2
+    - name: Login to Docker Hub
+      uses: docker/login-action@v1
+      with:
+        username: ${{ secrets.DOCKER_HUB_USERNAME }}
+        password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v1
+    - name: Build and push
+      uses: docker/build-push-action@v2
+      env:
+        IMAGE_TAG: ${{ steps.get_version.outputs.VERSION }}
+      with:
+        context: .
+        file: ./Dockerfile
+        push: true
+        tags: ${{ secrets.DOCKER_HUB_USERNAME }}/tdlib:$IMAGE_TAG
